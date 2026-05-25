@@ -1,0 +1,113 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  ESTOQUE
+  FINANCEIRO
+  VENDEDOR
+  ENTREGADOR
+}
+
+enum MovementType {
+  ENTRY
+  OUTPUT
+}
+
+enum FinancialType {
+  ENTRY
+  OUTPUT
+}
+
+enum OrderStatus {
+  PENDING
+  APPROVED
+  FINISHED
+  CANCELED
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      UserRole @default(VENDEDOR)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Product {
+  id           String          @id @default(uuid())
+  name         String
+  category     String
+  brand        String?
+  unit         String
+  stock        Int
+  minimumStock Int
+  costPrice    Float
+  salePrice    Float
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  movements    StockMovement[]
+  orderItems   OrderItem[]
+}
+
+model StockMovement {
+  id        String       @id @default(uuid())
+  productId String
+  product   Product      @relation(fields: [productId], references: [id])
+  type      MovementType
+  quantity  Int
+  note      String?
+  createdAt DateTime     @default(now())
+}
+
+model Client {
+  id        String   @id @default(uuid())
+  name      String
+  phone     String
+  email     String?
+  address   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  orders    Order[]
+}
+
+model Order {
+  id            String      @id @default(uuid())
+  clientId      String?
+  client        Client?     @relation(fields: [clientId], references: [id])
+  status        OrderStatus @default(PENDING)
+  total         Float
+  paymentMethod String?
+  note          String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  items         OrderItem[]
+}
+
+model OrderItem {
+  id        String  @id @default(uuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id])
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int
+  unitPrice Float
+  total     Float
+}
+
+model FinancialTransaction {
+  id          String        @id @default(uuid())
+  type        FinancialType
+  category    String
+  description String
+  amount      Float
+  createdAt   DateTime      @default(now())
+}

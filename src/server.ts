@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import bcrypt from 'bcryptjs';
@@ -9,10 +10,31 @@ const db: any = prisma;
 
 const app = express();
 
-app.use(cors());
-app.use(express.json());
+const allowedOrigins = String(process.env.FRONTEND_URL || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
-const JWT_SECRET = 'RJ_CHOPP_SECRET';
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      if (allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(null, true);
+    },
+    credentials: true,
+  })
+);
+
+app.use(express.json({ limit: '10mb' }));
+
+const JWT_SECRET = process.env.JWT_SECRET || 'RJ_CHOPP_SECRET';
 
 function toNumber(value: any) {
   const number = Number(value);
@@ -28,7 +50,7 @@ function normalizeOrderStatus(status: any) {
   const text = String(status || '').toLowerCase();
 
   if (text.includes('cancel')) {
-    return 'CANCELLED';
+    return 'CANCELED';
   }
 
   if (text.includes('final')) {
@@ -198,6 +220,15 @@ function authMiddleware(req: any, res: any, next: any) {
 app.get('/', (req, res) => {
   return res.json({
     message: 'API RJ Chopp rodando',
+    status: 'online',
+  });
+});
+
+app.get('/health', (req, res) => {
+  return res.json({
+    status: 'ok',
+    service: 'RJ Chopp API',
+    time: new Date().toISOString(),
   });
 });
 
@@ -1073,8 +1104,8 @@ app.post('/stock-movements', authMiddleware, async (req, res) => {
   }
 });
 
-const PORT = 3333;
+const PORT = Number(process.env.PORT || 3333);
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
