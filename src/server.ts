@@ -47,20 +47,39 @@ function toNumber(value: any) {
 }
 
 function normalizeOrderStatus(status: any) {
-  const text = String(status || '').toLowerCase();
+  const text = String(status || '')
+    .trim()
+    .toUpperCase();
 
-  if (text.includes('cancel')) {
+  const normalizedText = text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+
+  if (
+    text === 'CANCELED' ||
+    text === 'CANCELLED' ||
+    normalizedText.includes('cancel')
+  ) {
     return 'CANCELED';
   }
 
-  if (text.includes('final')) {
+  if (
+    text === 'FINISHED' ||
+    normalizedText.includes('final') ||
+    normalizedText.includes('concluido') ||
+    normalizedText.includes('concluida')
+  ) {
     return 'FINISHED';
   }
 
   if (
-    text.includes('entreg') ||
-    text.includes('aprov') ||
-    text.includes('andamento')
+    text === 'APPROVED' ||
+    normalizedText.includes('approved') ||
+    normalizedText.includes('entreg') ||
+    normalizedText.includes('aprov') ||
+    normalizedText.includes('andamento') ||
+    normalizedText.includes('retirada')
   ) {
     return 'APPROVED';
   }
